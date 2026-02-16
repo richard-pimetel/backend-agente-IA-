@@ -2,6 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Bot, 
+  User, 
+  SendHorizontal, 
+  Copy, 
+  Download, 
+  History, 
+  Trash2, 
+  Menu, 
+  X,
+  Loader2,
+  Code2,
+  Sparkles,
+  Check,
+  Terminal,
+  Braces,
+  FileCode
+} from 'lucide-react';
 import './App.css';
 
 const API_URL = 'https://backend-agente-ia.onrender.com/api';
@@ -11,10 +30,10 @@ function App() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [toast, setToast] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // Auto scroll
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -23,14 +42,17 @@ function App() {
     scrollToBottom();
   }, [messages]);
 
-  // Carregar histórico do localStorage
   useEffect(() => {
     loadHistory();
+    // Check screen size
+    if (window.innerWidth <= 768) {
+      setSidebarOpen(false);
+    }
   }, []);
 
   const loadHistory = () => {
     try {
-      const saved = localStorage.getItem('emergent-history');
+      const saved = localStorage.getItem('richardev-history');
       if (saved) {
         setHistory(JSON.parse(saved));
       }
@@ -39,7 +61,6 @@ function App() {
     }
   };
 
-  // Salvar no localStorage
   const saveToHistory = (prompt, code, language) => {
     const newItem = {
       _id: Date.now().toString(),
@@ -49,9 +70,14 @@ function App() {
       timestamp: new Date().toISOString()
     };
 
-    const updatedHistory = [newItem, ...history].slice(0, 20); // Máximo 20
+    const updatedHistory = [newItem, ...history].slice(0, 20);
     setHistory(updatedHistory);
-    localStorage.setItem('emergent-history', JSON.stringify(updatedHistory));
+    localStorage.setItem('richardev-history', JSON.stringify(updatedHistory));
+  };
+
+  const showToast = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2000);
   };
 
   const handleSubmit = async (e) => {
@@ -83,8 +109,6 @@ function App() {
       };
 
       setMessages(prev => [...prev, aiMessage]);
-      
-      // Salvar no localStorage (navegador)
       saveToHistory(input, response.data.code, response.data.language);
 
     } catch (error) {
@@ -101,7 +125,7 @@ function App() {
 
   const copyToClipboard = (code) => {
     navigator.clipboard.writeText(code);
-    alert('✅ Código copiado!');
+    showToast('Código copiado!');
   };
 
   const downloadCode = (code, filename = 'code.js') => {
@@ -112,6 +136,7 @@ function App() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    showToast('Download iniciado!');
   };
 
   const loadFromHistory = (item) => {
@@ -129,159 +154,309 @@ function App() {
     };
 
     setMessages([userMessage, aiMessage]);
-    setShowHistory(false);
+    if (window.innerWidth <= 768) {
+      setSidebarOpen(false);
+    }
   };
 
-  // Limpar histórico
   const clearHistory = () => {
     if (window.confirm('Deseja limpar todo o histórico?')) {
       setHistory([]);
-      localStorage.removeItem('emergent-history');
+      localStorage.removeItem('richardev-history');
+      showToast('Histórico limpo!');
     }
   };
 
   return (
     <div className="app">
-      {/* Header */}
-      <header className="header">
-        <div className="header-content">
-          <h1>🤖 Emergent AI Code Generator</h1>
-          <button 
-            className="history-btn"
-            onClick={() => setShowHistory(!showHistory)}
-          >
-            📚 Histórico ({history.length})
-          </button>
+      {/* Sidebar Overlay */}
+      <div 
+        className={`sidebar-overlay ${sidebarOpen ? 'visible' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      {/* Sidebar */}
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`} data-testid="sidebar">
+        <div className="sidebar-header">
+          <div className="logo-container">
+            <div className="logo-icon">
+              <Bot size={24} />
+            </div>
+            <div className="logo-text">
+              <h1>RichardEv</h1>
+              <span>Agente de Código</span>
+            </div>
+          </div>
         </div>
-      </header>
 
-      <div className="main-container">
-        {/* Sidebar - Histórico */}
-        {showHistory && (
-          <aside className="sidebar">
-            <div className="sidebar-header">
-              <h2>📚 Histórico</h2>
-              <div>
-                <button onClick={clearHistory} title="Limpar" style={{marginRight: '8px'}}>🗑️</button>
-                <button onClick={() => setShowHistory(false)}>✕</button>
-              </div>
-            </div>
-            <div className="history-list">
-              {history.length === 0 ? (
-                <p className="empty-history">Nenhum histórico ainda</p>
-              ) : (
-                history.map((item, index) => (
-                  <div 
-                    key={item._id || index} 
-                    className="history-item"
-                    onClick={() => loadFromHistory(item)}
-                  >
-                    <p className="history-prompt">{item.prompt}</p>
-                    <small className="history-time">
-                      {new Date(item.timestamp).toLocaleString('pt-BR')}
-                    </small>
-                  </div>
-                ))
-              )}
-            </div>
-          </aside>
-        )}
+        <div className="sidebar-content">
+          <div className="section-title">
+            <span><History size={14} /> Histórico</span>
+            {history.length > 0 && (
+              <button 
+                onClick={clearHistory} 
+                title="Limpar histórico"
+                data-testid="clear-history-btn"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
+          
+          <div className="history-list">
+            {history.length === 0 ? (
+              <p className="empty-history">Nenhum histórico ainda</p>
+            ) : (
+              history.map((item, index) => (
+                <motion.div
+                  key={item._id || index}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="history-item"
+                  onClick={() => loadFromHistory(item)}
+                  data-testid={`history-item-${index}`}
+                >
+                  <p className="history-prompt">{item.prompt}</p>
+                  <small className="history-time">
+                    {new Date(item.timestamp).toLocaleString('pt-BR')}
+                  </small>
+                </motion.div>
+              ))
+            )}
+          </div>
+        </div>
+      </aside>
 
-        {/* Chat Area */}
-        <main className="chat-container">
-          <div className="messages">
+      {/* Main Content */}
+      <main className="main-content">
+        {/* Header */}
+        <header className="header">
+          <button 
+            className="mobile-menu-btn" 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            data-testid="mobile-menu-btn"
+          >
+            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+          <div className="header-title">
+            <Sparkles size={18} />
+            <span>Gerador de Código com IA</span>
+          </div>
+          <div style={{ width: 40 }} />
+        </header>
+
+        {/* Messages */}
+        <div className="messages-container">
+          <div className="messages-wrapper">
             {messages.length === 0 ? (
               <div className="welcome">
-                <h2>👋 Bem-vindo ao Emergent AI!</h2>
-                <p>Digite o que você quer gerar e pressione Enter</p>
-                <div className="examples">
-                  <p><strong>Exemplos:</strong></p>
-                  <button onClick={() => setInput('criar função para validar CPF')}>Validar CPF</button>
-                  <button onClick={() => setInput('criar API REST com Express')}>API REST</button>
-                  <button onClick={() => setInput('criar componente React de login')}>Componente React</button>
-                </div>
+                <motion.div 
+                  className="welcome-icon"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Bot size={40} />
+                </motion.div>
+                <motion.h2
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  Olá, eu sou RichardEv
+                </motion.h2>
+                <motion.p
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  Seu assistente de IA para geração de código. O que você quer criar?
+                </motion.p>
+                <motion.div 
+                  className="examples"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <button 
+                    className="example-btn" 
+                    onClick={() => setInput('criar função para validar CPF')}
+                    data-testid="example-cpf"
+                  >
+                    <Terminal size={16} />
+                    Validar CPF
+                  </button>
+                  <button 
+                    className="example-btn" 
+                    onClick={() => setInput('criar API REST com Express')}
+                    data-testid="example-api"
+                  >
+                    <Braces size={16} />
+                    API REST
+                  </button>
+                  <button 
+                    className="example-btn" 
+                    onClick={() => setInput('criar componente React de login')}
+                    data-testid="example-react"
+                  >
+                    <FileCode size={16} />
+                    Componente React
+                  </button>
+                </motion.div>
               </div>
             ) : (
-              messages.map((msg, index) => (
-                <div key={index} className={`message message-${msg.type}`}>
-                  {msg.type === 'user' && (
-                    <div className="message-content">
-                      <strong>💬 Você:</strong>
-                      <p>{msg.content}</p>
-                    </div>
-                  )}
+              <AnimatePresence>
+                {messages.map((msg, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`message message-${msg.type}`}
+                  >
+                    {msg.type === 'user' && (
+                      <div className="message-content">
+                        <p>{msg.content}</p>
+                      </div>
+                    )}
 
-                  {msg.type === 'ai' && (
-                    <div className="message-content">
-                      <strong>🤖 IA:</strong>
-                      <div className="code-block">
-                        <div className="code-header">
-                          <span className="language">{msg.language}</span>
-                          <div className="code-actions">
-                            <button onClick={() => copyToClipboard(msg.content)} title="Copiar">
-                              📋 Copiar
-                            </button>
-                            <button onClick={() => downloadCode(msg.content)} title="Baixar">
-                              ⬇️ Baixar
-                            </button>
+                    {msg.type === 'ai' && (
+                      <>
+                        <div className="message-label">
+                          <Bot size={18} />
+                          <span>RichardEv</span>
+                        </div>
+                        <div className="code-block">
+                          <div className="code-header">
+                            <span className="code-language">
+                              <Code2 size={14} />
+                              {msg.language}
+                            </span>
+                            <div className="code-actions">
+                              <button 
+                                className="code-action-btn"
+                                onClick={() => copyToClipboard(msg.content)}
+                                data-testid={`copy-btn-${index}`}
+                              >
+                                <Copy size={14} />
+                                Copiar
+                              </button>
+                              <button 
+                                className="code-action-btn"
+                                onClick={() => downloadCode(msg.content)}
+                                data-testid={`download-btn-${index}`}
+                              >
+                                <Download size={14} />
+                                Baixar
+                              </button>
+                            </div>
+                          </div>
+                          <div className="code-content">
+                            <SyntaxHighlighter
+                              language={msg.language}
+                              style={vscDarkPlus}
+                              customStyle={{ 
+                                margin: 0, 
+                                background: 'transparent',
+                                padding: '1rem'
+                              }}
+                            >
+                              {msg.content}
+                            </SyntaxHighlighter>
                           </div>
                         </div>
-                        <SyntaxHighlighter 
-                          language={msg.language} 
-                          style={vscDarkPlus}
-                          customStyle={{ margin: 0, borderRadius: '0 0 8px 8px' }}
-                        >
-                          {msg.content}
-                        </SyntaxHighlighter>
-                      </div>
-                      {msg.tokens && (
-                        <small className="tokens">Tokens: {msg.tokens.input} in / {msg.tokens.output} out</small>
-                      )}
-                    </div>
-                  )}
+                        {msg.tokens && (
+                          <small className="tokens-info">
+                            Tokens: {msg.tokens.input} in / {msg.tokens.output} out
+                          </small>
+                        )}
+                      </>
+                    )}
 
-                  {msg.type === 'error' && (
-                    <div className="message-content error">
-                      <strong>❌ Erro:</strong>
-                      <p>{msg.content}</p>
-                    </div>
-                  )}
-                </div>
-              ))
+                    {msg.type === 'error' && (
+                      <div className="message-content">
+                        <p>{msg.content}</p>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             )}
 
             {loading && (
-              <div className="message message-ai">
-                <div className="message-content">
-                  <strong>🤖 IA:</strong>
-                  <div className="loading">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="message message-ai"
+              >
+                <div className="message-label">
+                  <Loader2 size={18} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
+                  <span>RichardEv está pensando...</span>
                 </div>
-              </div>
+                <div className="loading-dots">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </motion.div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
+        </div>
 
-          {/* Input Area */}
-          <form onSubmit={handleSubmit} className="input-area">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Digite o que você quer gerar..."
-              disabled={loading}
-              autoFocus
-            />
-            <button type="submit" disabled={loading || !input.trim()}>
-              {loading ? '⏳' : '▶️'}
-            </button>
-          </form>
-        </main>
-      </div>
+        {/* Input Area */}
+        <div className="input-container">
+          <div className="input-wrapper">
+            <form onSubmit={handleSubmit} className="input-form">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Descreva o código que você quer gerar..."
+                disabled={loading}
+                autoFocus
+                data-testid="chat-input"
+              />
+              <button 
+                type="submit" 
+                className="send-btn"
+                disabled={loading || !input.trim()}
+                data-testid="send-btn"
+              >
+                {loading ? (
+                  <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <SendHorizontal size={20} />
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      </main>
+
+      {/* Toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            className="toast"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+          >
+            <Check size={16} />
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
