@@ -5,7 +5,6 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bot, 
-  User, 
   SendHorizontal, 
   Copy, 
   Download, 
