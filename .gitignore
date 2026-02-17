@@ -1,42 +1,20 @@
-﻿node_modules/
-build/
-.DS_Store
+# Dependencies
+node_modules/
+
+# Environment files
+.env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
+
+# Logs
+*.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Emergent
+.emergent/
+.gitconfig
