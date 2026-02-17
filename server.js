@@ -260,9 +260,18 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Servir frontend
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Rota raiz
+app.get('/', (req, res) => {
+  res.json({
+    name: 'RichardEv AI Agent API',
+    version: '1.0.0',
+    endpoints: {
+      health: 'GET /api/health',
+      generate: 'POST /api/generate',
+      stream: 'POST /api/generate/stream',
+      history: 'GET /api/history'
+    }
+  });
 });
 
 // Iniciar servidor
