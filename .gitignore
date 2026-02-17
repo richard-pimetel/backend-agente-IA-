@@ -18,3 +18,7 @@ npm-debug.log*
 # Emergent
 .emergent/
 .gitconfig
+-e 
+# Environment files
+*.env
+*.env.*
